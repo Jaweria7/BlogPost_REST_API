@@ -4,6 +4,8 @@ import com.example.BlogPost.entities.Comment;
 import com.example.BlogPost.entities.Post;
 import com.example.BlogPost.repositories.CommentRepository;
 import com.example.BlogPost.repositories.PostRepository;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -28,6 +30,10 @@ public class CommentService {
                 .orElseThrow(() -> new IllegalArgumentException("Invalid post ID: " + postId));
         comment.setPost(post);
 
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUser = authentication.getName();
+        comment.setName(currentUser);
+
         if (comment.getId() != null) {
             Comment existingComment = commentRepository.findById(comment.getId())
                     .orElseThrow(() -> new IllegalArgumentException("Invalid comment ID: " + comment.getId()));
@@ -44,4 +50,5 @@ public class CommentService {
         commentRepository.delete(comment);
     }
 }
+
 

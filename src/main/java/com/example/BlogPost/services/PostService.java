@@ -1,14 +1,20 @@
 package com.example.BlogPost.services;
 
+import com.example.BlogPost.entities.FilterCriteria;
 import com.example.BlogPost.entities.Post;
 import com.example.BlogPost.entities.Tag;
 import com.example.BlogPost.repositories.PostRepository;
 import com.example.BlogPost.repositories.TagRepository;
+import com.example.BlogPost.repositories.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class PostService {
@@ -21,63 +27,58 @@ public class PostService {
         this.tagRepository = tagRepository;
     }
 
-    public List<Post> getAllPosts() {
-        return postRepository.findAll();
+    public Page<Post> searchAndFilterPosts(String searchQuery, FilterCriteria criteria, Pageable pageable) {
+        Specification<Post> specification = new PostSpecification(criteria, searchQuery);
+        return postRepository.findAll(specification, pageable);
     }
 
     public Post getPostById(Long id) {
-        return postRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid post ID: " + id));
+        return postRepository.findById(id).orElse(null);
     }
 
-    public Post saveOrUpdatePost(Post postDetails, String tagsInput) {
-        Post existingPost = null;
-
-        if (postDetails.getId() != null) {
-            existingPost = postRepository.findById(postDetails.getId())
-                    .orElse(null);
-        }
-
-        if (existingPost != null) {
-            existingPost.setTitle(postDetails.getTitle());
-            existingPost.setContent(postDetails.getContent());
-            existingPost.setExcerpt(postDetails.getExcerpt());
-        } else {
-            existingPost = new Post();
-            existingPost.setTitle(postDetails.getTitle());
-            existingPost.setContent(postDetails.getContent());
-            existingPost.setExcerpt(postDetails.getExcerpt());
-        }
-
-        Set<Tag> tags = new HashSet<>();
-        String[] tagNames = tagsInput.split(",");
-
-        for (String tagName : tagNames) {
-            tagName = tagName.trim();
-            if (tagName.isEmpty()) {
-                continue;
-            }
-            Tag tag = tagRepository.findByName(tagName);
+    public void savePost(Post post) {
+        Set<Tag> tags = post.getTagList().stream().map(tagString -> {
+            Tag tag = tagRepository.findByName(tagString);
             if (tag == null) {
                 tag = new Tag();
-                tag.setName(tagName);
+                tag.setName(tagString);
                 tagRepository.save(tag);
             }
-            tags.add(tag);
-        }
-        existingPost.getTags().clear();
-        existingPost.setTags(tags);
+            return tag;
+        }).collect(Collectors.toSet());
 
-        return postRepository.save(existingPost);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUser = authentication.getName();
+
+        post.setAuthor(currentUser);
+        post.setTags(tags);
+        postRepository.save(post);
     }
 
-    public boolean deletePost(Long id) {
-        if (postRepository.existsById(id)) {
-            postRepository.deleteById(id);
-            return true;
-        } else {
-            return false;
-        }
+    public void updatePostWithTags(Post post) {
+        Post existingPost = postRepository.findById(post.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid post ID: " + post.getId()));
+
+        existingPost.getTags().clear();
+        Set<Tag> tags = post.getTagList().stream().map(tagString -> {
+            Tag tag = tagRepository.findByName(tagString);
+            if (tag == null) {
+                tag = new Tag();
+                tag.setName(tagString);
+                tagRepository.save(tag);
+            }
+            return tag;
+        }).collect(Collectors.toSet());
+
+        existingPost.setTags(tags);
+        existingPost.setTitle(post.getTitle());
+        existingPost.setContent(post.getContent());
+        existingPost.setExcerpt(post.getExcerpt());
+
+        postRepository.save(existingPost);
+    }
+
+    public void deletePostById(Long id) {
+        postRepository.deleteById(id);
     }
 }
-

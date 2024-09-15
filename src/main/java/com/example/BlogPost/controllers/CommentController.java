@@ -1,25 +1,20 @@
 package com.example.BlogPost.controllers;
 
 import com.example.BlogPost.entities.Comment;
-import com.example.BlogPost.entities.Post;
 import com.example.BlogPost.services.CommentService;
-import com.example.BlogPost.services.PostService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/comments")
-public class CommentRestController {
+@RequestMapping("/comments")
+public class CommentController {
 
     private final CommentService commentService;
-    private final PostService postService;
 
-    public CommentRestController(CommentService commentService, PostService postService) {
+    public CommentController(CommentService commentService) {
         this.commentService = commentService;
-        this.postService = postService;
     }
 
     @GetMapping("/{postId}")
