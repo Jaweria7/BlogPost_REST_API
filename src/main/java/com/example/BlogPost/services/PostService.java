@@ -5,7 +5,6 @@ import com.example.BlogPost.entities.Post;
 import com.example.BlogPost.entities.Tag;
 import com.example.BlogPost.repositories.PostRepository;
 import com.example.BlogPost.repositories.TagRepository;
-import com.example.BlogPost.repositories.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;

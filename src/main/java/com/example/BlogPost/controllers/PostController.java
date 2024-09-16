@@ -10,6 +10,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -70,6 +71,7 @@ public class PostController {
     }
 
     // Update an existing post
+    @PreAuthorize("(hasRole('AUTHOR') and #post.author != null and #authentication.principal.username.toLowerCase() == #post.author.toLowerCase()) or hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<Post> updatePost(@PathVariable Long id, @RequestBody Post post){
         post.setId(id);
@@ -77,8 +79,8 @@ public class PostController {
         return ResponseEntity.ok(post);
     }
 
-
     // Delete an existing post
+    @PreAuthorize("(hasRole('AUTHOR') and #post.author != null and #authentication.principal.username.toLowerCase() == #post.author.toLowerCase()) or hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePost(@PathVariable Long id) {
         postService.deletePostById(id);
